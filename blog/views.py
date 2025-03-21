@@ -99,3 +99,10 @@ def user_profile(request):
         'notifications': notifications,
         'tab': tab,
     })
+    
+    
+from django.contrib.auth import logout
+
+def logout_view(request):
+    logout(request)
+    return redirect('home')

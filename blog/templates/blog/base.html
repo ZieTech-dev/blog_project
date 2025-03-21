@@ -14,7 +14,14 @@
                     {% if user.is_authenticated %}
                         <li class="nav-item"><a class="nav-link" href="{% url 'create_article' %}">Créer un article</a></li>
                         <li class="nav-item"><a class="nav-link" href="{% url 'profile' %}">Profil</a></li>
+                        {% comment %} <li class="nav-item"><a class="nav-link" href="{% url 'logout' %}">Déconnexion</a></li> {% endcomment %}
                         <li class="nav-item"><a class="nav-link" href="{% url 'logout' %}">Déconnexion</a></li>
+                        {% comment %} <li class="nav-item">
+                            <form method="post" action="{% url 'logout' %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="nav-link btn btn-link" style="padding:0; border:none; background:none;">Déconnexion</button>
+                            </form>
+                        </li> {% endcomment %}
                     {% else %}
                         <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Connexion</a></li>
                     {% endif %}
