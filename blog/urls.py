@@ -8,4 +8,6 @@ urlpatterns = [
     path('article/<int:article_id>/like/', views.like_article, name='like_article'),
     path('article/<int:article_id>/favorite/', views.favorite_article, name='favorite_article'),
     path('profile/', views.user_profile, name='profile'),
+    path('check-notifications/', views.check_notifications, name='check_notifications'),
+    path('mark-notifications-read/', views.mark_notifications_read, name='mark_notifications_read'),
 ]

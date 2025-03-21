@@ -17,7 +17,7 @@ urlpatterns += [
     path('login/', auth_views.LoginView.as_view(
         template_name='blog/login.html',
         redirect_authenticated_user=True,  # Évite la reconnexion si déjà connecté
-        next_page='profile'  # Redirige vers /profile/ après connexion
+        next_page='home'  # Redirige vers /profile/ après connexion
     ), name='login'),
     path('logout/', logout_view, name='logout'),
 ]
