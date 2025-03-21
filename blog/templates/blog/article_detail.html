@@ -1,0 +1,37 @@
+﻿{% extends 'blog/base.html' %}
+{% block content %}
+    <h1>{{ article.title }}</h1>
+    <p>{{ article.content }}</p>
+    <p><strong>Catégorie :</strong> {{ article.category }}</p>
+    <p><strong>Tags :</strong> {% for tag in article.tags.all %}{{ tag.name }} {% endfor %}</p>
+    <p><strong>Vues :</strong> {{ article.views }}</p>
+    <p><strong>Likes :</strong> {{ article.likes.count }}</p>
+    {% if user.is_authenticated %}
+        <a href="{% url 'like_article' article.id %}" class="btn btn-{% if user in article.likes.all %}danger{% else %}primary{% endif %}">
+            {% if user in article.likes.all %}Unlike{% else %}Like{% endif %}
+        </a>
+        <a href="{% url 'favorite_article' article.id %}" class="btn btn-{% if article in user.favorite_set.all %}warning{% else %}secondary{% endif %}">
+            {% if article in user.favorite_set.all %}Retirer des favoris{% else %}Ajouter aux favoris{% endif %}
+        </a>
+    {% endif %}
+
+    <h3>Commentaires</h3>
+    {% for comment in article.comments.all %}
+        <div class="card mb-2">
+            <div class="card-body">
+                <p>{{ comment.content }}</p>
+                <small>Par {{ comment.author }} le {{ comment.created_at }}</small>
+            </div>
+        </div>
+    {% empty %}
+        <p>Aucun commentaire.</p>
+    {% endfor %}
+
+    {% if user.is_authenticated %}
+        <form method="post" class="mt-4">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-success">Commenter</button>
+        </form>
+    {% endif %}
+{% endblock %}
