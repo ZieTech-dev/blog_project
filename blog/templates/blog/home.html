@@ -27,19 +27,61 @@
     <div class="row">
         {% for article in articles %}
             <div class="col-md-4 mb-4">
-                <div class="card">
+                <div class="card article-card position-relative">
                     <div class="card-body">
                         <h5 class="card-title">{{ article.title }}</h5>
                         <p class="card-text">{{ article.content|truncatewords:20 }}</p>
-                        <a href="{% url 'article_detail' article.id %}" class="btn btn-primary">Lire</a>
-                        {% if user.is_authenticated %}
-                            <a href="{% url 'like_article' article.id %}" class="btn btn-{% if user in article.likes.all %}danger{% else %}primary{% endif %}">
-                                {% if user in article.likes.all %}Unlike{% else %}Like{% endif %} ({{ article.likes.count }})
-                            </a>
-                        {% else %}
-                            <a href="{% url 'login' %}?next={% url 'like_article' article.id %}" class="btn btn-primary">Like ({{ article.likes.count }})</a>
-                        {% endif %}
-                        <a href="{% url 'article_detail' article.id %}#comments" class="btn btn-secondary">Commenter ({{ article.comments.count }})</a>
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'article_detail' article.id %}" class="btn btn-primary btn-sm">Lire</a>
+                            {% if user.is_authenticated %}
+                                <a href="{% url 'like_article' article.id %}" class="btn btn-{% if user in article.likes.all %}danger{% else %}primary{% endif %} btn-sm">
+                                    {% if user in article.likes.all %}Unlike{% else %}Like{% endif %} ({{ article.likes.count }})
+                                </a>
+                            {% else %}
+                                <a href="{% url 'login' %}?next={% url 'like_article' article.id %}" class="btn btn-primary btn-sm">Like ({{ article.likes.count }})</a>
+                            {% endif %}
+                            <button class="btn btn-secondary btn-sm comment-toggle" data-article-id="{{ article.id }}">
+                                Commenter ({{ article.comments.count }})
+                            </button>
+                        </div>
+
+                        <!-- Volet des commentaires -->
+                        <div class="comment-panel" id="comment-panel-{{ article.id }}">
+                            <div class="comment-header">
+                                <h6>Commentaires</h6>
+                                <button class="btn btn-close comment-close" data-article-id="{{ article.id }}"></button>
+                            </div>
+                            <div class="comment-list">
+                                {% for comment in article.comments.all|slice:":5" %}
+                                    <div class="comment">
+                                        <div class="comment-avatar">
+                                            <i class="fas fa-user-circle"></i>
+                                        </div>
+                                        <div class="comment-content">
+                                            <strong>{{ comment.author.username }}</strong>
+                                            <p>{{ comment.content }}</p>
+                                            <small>{{ comment.created_at|timesince }} ago</small>
+                                        </div>
+                                    </div>
+                                {% empty %}
+                                    <p class="text-muted">Aucun commentaire pour l'instant.</p>
+                                {% endfor %}
+                                {% if article.comments.count > 5 %}
+                                    <a href="{% url 'article_detail' article.id %}#comments" class="see-more">Voir plus de commentaires</a>
+                                {% endif %}
+                            </div>
+                            {% if user.is_authenticated %}
+                                <form method="post" action="{% url 'article_detail' article.id %}" class="comment-form" data-article-id="{{ article.id }}">
+                                    {% csrf_token %}
+                                    <div class="input-group">
+                                        <input type="text" name="content" class="form-control" placeholder="Ajouter un commentaire..." required>
+                                        <button type="submit" class="btn btn-primary">Envoyer</button>
+                                    </div>
+                                </form>
+                            {% else %}
+                                <p class="text-muted"><a href="{% url 'login' %}?next={% url 'article_detail' article.id %}">Connectez-vous pour commenter</a></p>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -47,4 +89,187 @@
             <p>Aucun article trouvé.</p>
         {% endfor %}
     </div>
-{% endblock %}  
+
+    <style>
+        .article-card {
+            min-height: 200px;
+            transition: all 0.3s ease-in-out;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .article-card.expanded {
+            min-height: 400px; /* S'étend en hauteur quand le volet est ouvert */
+        }
+        .card-body {
+            padding: 20px;
+        }
+        .card-title {
+            font-size: 1.25rem;
+            margin-bottom: 10px;
+        }
+        .card-text {
+            font-size: 1rem;
+            color: #555;
+        }
+        .btn-group .btn-sm {
+            padding: 5px 10px;
+            font-size: 0.875rem;
+        }
+        .comment-panel {
+            position: absolute;
+            top: 0;
+            right: -100%;
+            width: 100%;
+            height: 100%;
+            background-color: #fff;
+            padding: 20px;
+            transition: right 0.3s ease-in-out;
+            z-index: 10;
+            display: none;
+            border-left: 1px solid #eee;
+        }
+        .comment-panel.active {
+            right: 0;
+            display: block;
+        }
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .comment-header h6 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+        .comment-list {
+            max-height: 250px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+        .comment {
+            display: flex;
+            align-items: flex-start;
+            padding: 10px 0;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        .comment-avatar {
+            margin-right: 10px;
+            font-size: 1.5rem;
+            color: #888;
+        }
+        .comment-content {
+            flex: 1;
+        }
+        .comment-content strong {
+            font-size: 0.95rem;
+            color: #333;
+        }
+        .comment-content p {
+            margin: 2px 0 5px;
+            font-size: 0.9rem;
+            color: #444;
+        }
+        .comment-content small {
+            color: #999;
+            font-size: 0.75rem;
+        }
+        .see-more {
+            display: block;
+            text-align: center;
+            color: #007bff;
+            font-size: 0.85rem;
+            text-decoration: none;
+        }
+        .see-more:hover {
+            text-decoration: underline;
+        }
+        .comment-form .form-control {
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        .comment-form .btn {
+            border-radius: 20px;
+            padding: 5px 15px;
+        }
+    </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM chargé - home.html');
+            document.querySelectorAll('.comment-toggle').forEach(button => {
+                button.addEventListener('click', function() {
+                    const articleId = this.getAttribute('data-article-id');
+                    const panel = document.getElementById(`comment-panel-${articleId}`);
+                    const card = this.closest('.article-card');
+                    if (panel && card) {
+                        panel.classList.toggle('active');
+                        card.classList.toggle('expanded');
+                    }
+                });
+            });
+    
+            document.querySelectorAll('.comment-close').forEach(button => {
+                button.addEventListener('click', function() {
+                    const articleId = this.getAttribute('data-article-id');
+                    const panel = document.getElementById(`comment-panel-${articleId}`);
+                    const card = this.closest('.article-card');
+                    if (panel && card) {
+                        panel.classList.remove('active');
+                        card.classList.remove('expanded');
+                    }
+                });
+            });
+    
+            document.querySelectorAll('.comment-form').forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const articleId = this.getAttribute('data-article-id');
+                    const formData = new FormData(this);
+    
+                    fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': document.querySelector('input[name="csrfmiddlewaretoken"]').value,
+                            'X-Requested-With': 'XMLHttpRequest' // Doit être exact
+                        },
+                        credentials: 'include'
+                    })
+                    .then(response => {
+                        console.log('Statut de la réponse:', response.status);
+                        if (!response.ok) {
+                            throw new Error(`Erreur HTTP: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Données reçues:', data);
+                        if (data.success) {
+                            const commentList = document.querySelector(`#comment-panel-${articleId} .comment-list`);
+                            const newComment = document.createElement('div');
+                            newComment.classList.add('comment');
+                            newComment.innerHTML = `
+                                <div class="comment-avatar"><i class="fas fa-user-circle"></i></div>
+                                <div class="comment-content">
+                                    <strong>${data.author}</strong>
+                                    <p>${data.content}</p>
+                                    <small>Juste maintenant</small>
+                                </div>
+                            `;
+                            commentList.insertBefore(newComment, commentList.firstChild);
+                            this.reset();
+                        } else {
+                            alert('Erreur: ' + (data.error || 'Inconnu'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors de la requête:', error);
+                        alert('Une erreur est survenue. Vérifiez la console.');
+                    });
+                });
+            });
+        });
+    </script>
+{% endblock %}
