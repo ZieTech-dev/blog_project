@@ -1,10 +1,10 @@
 ﻿{% extends 'blog/base.html' %}
 {% block content %}
-    <h1>Articles</h1>
-    <form method="get" class="mb-4">
-        <div class="row">
+    <h1 class="page-title">Articles</h1>
+    <form method="get" class="filter-form mb-5">
+        <div class="row g-3">
             <div class="col-md-4">
-                <select name="category" class="form-select">
+                <select name="category" class="form-select sleek-select">
                     <option value="">Toutes les catégories</option>
                     {% for category in categories %}
                         <option value="{{ category.name }}">{{ category.name }}</option>
@@ -12,7 +12,7 @@
                 </select>
             </div>
             <div class="col-md-4">
-                <select name="tag" class="form-select">
+                <select name="tag" class="form-select sleek-select">
                     <option value="">Tous les tags</option>
                     {% for tag in tags %}
                         <option value="{{ tag.name }}">{{ tag.name }}</option>
@@ -20,29 +20,60 @@
                 </select>
             </div>
             <div class="col-md-4">
-                <button type="submit" class="btn btn-primary w-100">Filtrer</button>
+                <button type="submit" class="btn btn-gradient w-100">Filtrer</button>
             </div>
         </div>
     </form>
-    <div class="row">
+
+    <div class="row g-4">
         {% for article in articles %}
-            <div class="col-md-4 mb-4">
-                <div class="card article-card position-relative">
-                    <div class="card-body">
+            <div class="col-md-4">
+                <div class="card article-card">
+                    <div class="card-content">
                         <h5 class="card-title">{{ article.title }}</h5>
                         <p class="card-text">{{ article.content|truncatewords:20 }}</p>
-                        <div class="btn-group" role="group">
-                            <a href="{% url 'article_detail' article.id %}" class="btn btn-primary btn-sm">Lire</a>
+                        <div class="action-bar">
+                            <!-- Checkbox Lire -->
+                            <label class="action-icon read-icon">
+                                <input type="checkbox" class="read-check" data-article-id="{{ article.id }}">
+                                <span class="icon-wrapper">
+                                    <i class="fas fa-book-open unchecked"></i>
+                                    <i class="fas fa-book checked"></i>
+                                    <span class="ripple"></span>
+                                </span>
+                            </label>
+
+                            <!-- Checkbox Like -->
                             {% if user.is_authenticated %}
-                                <a href="{% url 'like_article' article.id %}" class="btn btn-{% if user in article.likes.all %}danger{% else %}primary{% endif %} btn-sm">
-                                    {% if user in article.likes.all %}Unlike{% else %}Like{% endif %} ({{ article.likes.count }})
-                                </a>
+                                <label class="action-icon like-icon">
+                                    <input type="checkbox" class="like-check" data-article-id="{{ article.id }}"
+                                        {% if user in article.likes.all %}checked{% endif %}>
+                                    <span class="icon-wrapper">
+                                        <i class="far fa-heart unchecked"></i>
+                                        <i class="fas fa-heart checked"></i>
+                                        <span class="ripple"></span>
+                                        <span class="like-count">{{ article.likes.count }}</span>
+                                    </span>
+                                </label>
                             {% else %}
-                                <a href="{% url 'login' %}?next={% url 'like_article' article.id %}" class="btn btn-primary btn-sm">Like ({{ article.likes.count }})</a>
+                                <a href="{% url 'login' %}?next={% url 'like_article' article.id %}" class="action-icon like-icon static">
+                                    <span class="icon-wrapper">
+                                        <i class="far fa-heart"></i>
+                                        <span class="like-count">{{ article.likes.count }}</span>
+                                    </span>
+                                </a>
                             {% endif %}
-                            <button class="btn btn-secondary btn-sm comment-toggle" data-article-id="{{ article.id }}">
-                                Commenter ({{ article.comments.count }})
-                            </button>
+
+                            <!-- Checkbox Commenter -->
+                            <label class="action-icon comment-icon">
+                                <input type="checkbox" class="comment-check" data-article-id="{{ article.id }}">
+                                <span class="icon-wrapper">
+                                    <i class="far fa-comment unchecked"></i>
+                                    <i class="fas fa-comment checked"></i>
+                                    <span class="ripple"></span>
+                                    <span class="comment-count">{{ article.comments.count }}</span>
+                                </span>
+                            </label>
                         </div>
 
                         <!-- Volet des commentaires -->
@@ -64,10 +95,10 @@
                                         </div>
                                     </div>
                                 {% empty %}
-                                    <p class="text-muted">Aucun commentaire pour l'instant.</p>
+                                    <p class="text-muted">Aucun commentaire pour l’instant.</p>
                                 {% endfor %}
                                 {% if article.comments.count > 5 %}
-                                    <a href="{% url 'article_detail' article.id %}#comments" class="see-more">Voir plus de commentaires</a>
+                                    <a href="{% url 'article_detail' article.id %}#comments" class="see-more">Voir plus</a>
                                 {% endif %}
                             </div>
                             {% if user.is_authenticated %}
@@ -86,48 +117,177 @@
                 </div>
             </div>
         {% empty %}
-            <p>Aucun article trouvé.</p>
+            <p class="no-content">Aucun article trouvé.</p>
         {% endfor %}
     </div>
 
     <style>
+        /* Général */
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #333;
+            text-align: center;
+            margin-bottom: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .filter-form .sleek-select {
+            border-radius: 25px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        .btn-gradient {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border: none;
+            color: white;
+            font-weight: 600;
+            border-radius: 25px;
+            padding: 10px;
+            transition: transform 0.2s;
+        }
+        .btn-gradient:hover {
+            transform: scale(1.05);
+        }
+
+        /* Carte */
         .article-card {
-            min-height: 200px;
-            transition: all 0.3s ease-in-out;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
             overflow: hidden;
+            transition: all 0.4s ease;
+            min-height: 250px;
+            position: relative;
+        }
+        .article-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
         }
         .article-card.expanded {
-            min-height: 400px; /* S'étend en hauteur quand le volet est ouvert */
+            min-height: 450px;
         }
-        .card-body {
+        .card-content {
             padding: 20px;
+            position: relative;
+            z-index: 1;
         }
         .card-title {
-            font-size: 1.25rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #222;
             margin-bottom: 10px;
+            line-height: 1.2;
         }
         .card-text {
             font-size: 1rem;
-            color: #555;
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.5;
         }
-        .btn-group .btn-sm {
-            padding: 5px 10px;
-            font-size: 0.875rem;
+
+        /* Barre d'actions */
+        .action-bar {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: flex-start;
         }
+        .action-icon {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .action-icon input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            cursor: pointer;
+        }
+        .icon-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            font-size: 1.5rem;
+            color: #888;
+            transition: color 0.3s ease;
+        }
+        .icon-wrapper .checked {
+            display: none;
+        }
+        .icon-wrapper .unchecked {
+            display: inline;
+        }
+        .action-icon input:checked ~ .icon-wrapper .checked {
+            display: inline;
+            color: #ff4757; /* Rouge vif pour Like et Lire */
+        }
+        .action-icon input:checked ~ .icon-wrapper .unchecked {
+            display: none;
+        }
+        .ripple {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 71, 87, 0.3);
+            border-radius: 50%;
+            transform: scale(0);
+            pointer-events: none;
+        }
+        .action-icon input:checked ~ .icon-wrapper .ripple {
+            animation: ripple-effect 0.5s ease-out;
+        }
+        .like-count, .comment-count {
+            font-size: 0.9rem;
+            color: #888;
+            margin-left: 5px;
+            transition: color 0.3s ease;
+        }
+        .action-icon input:checked ~ .icon-wrapper .like-count,
+        .action-icon input:checked ~ .icon-wrapper .comment-count {
+            color: #ff4757;
+        }
+
+        /* Spécifique à Commenter */
+        .comment-icon input:checked ~ .icon-wrapper .checked {
+            color: #1e90ff; /* Bleu pour les commentaires */
+        }
+        .comment-icon input:checked ~ .icon-wrapper .ripple {
+            background: rgba(30, 144, 255, 0.3);
+        }
+
+        /* Spécifique à Lire */
+        .read-icon input:checked ~ .icon-wrapper .checked {
+            color: #2ecc71; /* Vert pour Lire */
+        }
+        .read-icon input:checked ~ .icon-wrapper .ripple {
+            background: rgba(46, 204, 113, 0.3);
+        }
+
+        /* Animation Ripple */
+        @keyframes ripple-effect {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+
+        /* Volet des commentaires */
         .comment-panel {
             position: absolute;
             top: 0;
             right: -100%;
             width: 100%;
             height: 100%;
-            background-color: #fff;
+            background: rgba(255, 255, 255, 0.95);
             padding: 20px;
-            transition: right 0.3s ease-in-out;
+            transition: right 0.4s ease-in-out;
             z-index: 10;
             display: none;
-            border-left: 1px solid #eee;
+            border-radius: 20px 0 0 20px;
+            box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
         }
         .comment-panel.active {
             right: 0;
@@ -140,11 +300,12 @@
             margin-bottom: 15px;
         }
         .comment-header h6 {
-            margin: 0;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
         }
         .comment-list {
-            max-height: 250px;
+            max-height: 300px;
             overflow-y: auto;
             margin-bottom: 15px;
         }
@@ -152,33 +313,33 @@
             display: flex;
             align-items: flex-start;
             padding: 10px 0;
-            border-bottom: 1px solid #f5f5f5;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s;
+        }
+        .comment:hover {
+            background: #f9f9f9;
         }
         .comment-avatar {
-            margin-right: 10px;
-            font-size: 1.5rem;
-            color: #888;
-        }
-        .comment-content {
-            flex: 1;
+            margin-right: 12px;
+            font-size: 1.8rem;
+            color: #bbb;
         }
         .comment-content strong {
             font-size: 0.95rem;
             color: #333;
         }
         .comment-content p {
-            margin: 2px 0 5px;
             font-size: 0.9rem;
-            color: #444;
+            color: #555;
+            margin: 2px 0 5px;
         }
         .comment-content small {
-            color: #999;
             font-size: 0.75rem;
+            color: #999;
         }
         .see-more {
-            display: block;
             text-align: center;
-            color: #007bff;
+            color: #1e90ff;
             font-size: 0.85rem;
             text-decoration: none;
         }
@@ -187,65 +348,122 @@
         }
         .comment-form .form-control {
             border-radius: 20px;
+            border: 1px solid #ddd;
+            padding: 8px 15px;
             font-size: 0.9rem;
         }
         .comment-form .btn {
             border-radius: 20px;
-            padding: 5px 15px;
+            background: #1e90ff;
+            border: none;
+            padding: 8px 15px;
+        }
+
+        /* Si pas d'articles */
+        .no-content {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #888;
+            margin-top: 2rem;
         }
     </style>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM chargé - home.html');
-            document.querySelectorAll('.comment-toggle').forEach(button => {
-                button.addEventListener('click', function() {
+            // Checkbox Lire (redirige vers article_detail)
+            document.querySelectorAll('.read-check').forEach(check => {
+                check.addEventListener('change', function() {
+                    if (this.checked) {
+                        window.location.href = `/article/${this.getAttribute('data-article-id')}/`;
+                    }
+                });
+            });
+
+            // Checkbox Like (AJAX)
+            document.querySelectorAll('.like-check').forEach(check => {
+                check.addEventListener('change', function() {
+                    const articleId = this.getAttribute('data-article-id');
+                    const isChecked = this.checked;
+                    const countSpan = this.nextElementSibling.querySelector('.like-count');
+            
+                    fetch(`/like/${articleId}/`, {  // Vérifie ce chemin
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': document.querySelector('input[name="csrfmiddlewaretoken"]').value,
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ liked: isChecked })
+                    })
+                    .then(response => {
+                        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            countSpan.textContent = data.like_count;
+                        } else {
+                            this.checked = !isChecked; // Revenir en arrière
+                            alert('Erreur: ' + (data.error || 'Inconnu'));
+                        }
+                    })
+                    .catch(error => {
+                        this.checked = !isChecked;
+                        console.error('Erreur:', error);
+                    });
+                });
+            });
+
+            // Checkbox Commenter (ouvre le volet)
+            document.querySelectorAll('.comment-check').forEach(check => {
+                check.addEventListener('change', function() {
                     const articleId = this.getAttribute('data-article-id');
                     const panel = document.getElementById(`comment-panel-${articleId}`);
                     const card = this.closest('.article-card');
                     if (panel && card) {
-                        panel.classList.toggle('active');
-                        card.classList.toggle('expanded');
+                        if (this.checked) {
+                            panel.classList.add('active');
+                            card.classList.add('expanded');
+                        } else {
+                            panel.classList.remove('active');
+                            card.classList.remove('expanded');
+                        }
                     }
                 });
             });
-    
+
+            // Bouton de fermeture du volet
             document.querySelectorAll('.comment-close').forEach(button => {
                 button.addEventListener('click', function() {
                     const articleId = this.getAttribute('data-article-id');
                     const panel = document.getElementById(`comment-panel-${articleId}`);
                     const card = this.closest('.article-card');
-                    if (panel && card) {
+                    const check = document.querySelector(`.comment-check[data-article-id="${articleId}"]`);
+                    if (panel && card && check) {
                         panel.classList.remove('active');
                         card.classList.remove('expanded');
+                        check.checked = false;
                     }
                 });
             });
-    
+
+            // Soumission des commentaires
             document.querySelectorAll('.comment-form').forEach(form => {
                 form.addEventListener('submit', function(e) {
                     e.preventDefault();
                     const articleId = this.getAttribute('data-article-id');
                     const formData = new FormData(this);
-    
+
                     fetch(this.action, {
                         method: 'POST',
                         body: formData,
                         headers: {
                             'X-CSRFToken': document.querySelector('input[name="csrfmiddlewaretoken"]').value,
-                            'X-Requested-With': 'XMLHttpRequest' // Doit être exact
-                        },
-                        credentials: 'include'
-                    })
-                    .then(response => {
-                        console.log('Statut de la réponse:', response.status);
-                        if (!response.ok) {
-                            throw new Error(`Erreur HTTP: ${response.status}`);
+                            'X-Requested-With': 'XMLHttpRequest'
                         }
-                        return response.json();
                     })
+                    .then(response => response.json())
                     .then(data => {
-                        console.log('Données reçues:', data);
                         if (data.success) {
                             const commentList = document.querySelector(`#comment-panel-${articleId} .comment-list`);
                             const newComment = document.createElement('div');
@@ -260,14 +478,13 @@
                             `;
                             commentList.insertBefore(newComment, commentList.firstChild);
                             this.reset();
+                            const countSpan = document.querySelector(`.comment-check[data-article-id="${articleId}"] ~ .icon-wrapper .comment-count`);
+                            countSpan.textContent = parseInt(countSpan.textContent) + 1;
                         } else {
                             alert('Erreur: ' + (data.error || 'Inconnu'));
                         }
                     })
-                    .catch(error => {
-                        console.error('Erreur lors de la requête:', error);
-                        alert('Une erreur est survenue. Vérifiez la console.');
-                    });
+                    .catch(error => console.error('Erreur:', error));
                 });
             });
         });

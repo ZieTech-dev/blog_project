@@ -9,6 +9,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import Article, Category, Tag, Comment, Favorite, Notification
 from .forms import ArticleForm, CommentForm
+import json
 
 def home(request):
     articles = Article.objects.all().prefetch_related('comments')  # Optimisation pour les commentaires
@@ -102,21 +103,38 @@ def create_article(request):
         'form': form,
         'unread_notifications': unread_notifications,
     })
+    
 
 @login_required
 def like_article(request, article_id):
     article = get_object_or_404(Article, id=article_id)
-    if request.user in article.likes.all():
-        article.likes.remove(request.user)
-    else:
-        article.likes.add(request.user)
-        Notification.objects.create(
-            user=article.author,
-            message=f"{request.user.username} a aimé votre article : {article.title}",
-            is_read=False,
-            is_displayed=False
-        )
-    return redirect('home')
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+    if request.method == 'POST' and is_ajax:
+        try:
+            # Lire le corps JSON
+            data = json.loads(request.body)
+            liked = data.get('liked', False)  # Récupérer 'liked' du JSON, défaut à False
+            if liked:
+                if request.user not in article.likes.all():
+                    article.likes.add(request.user)
+                    Notification.objects.create(
+                        user=article.author,
+                        message=f"{request.user.username} a aimé votre article : {article.title}",
+                        is_read=False,
+                        is_displayed=False
+                    )
+            else:
+                if request.user in article.likes.all():
+                    article.likes.remove(request.user)
+            return JsonResponse({
+                'success': True,
+                'like_count': article.likes.count()
+            }, status=200)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Données JSON invalides'}, status=400)
+    return JsonResponse({'success': False, 'error': 'Requête invalide'}, status=400)
+
 
 @login_required
 def favorite_article(request, article_id):
