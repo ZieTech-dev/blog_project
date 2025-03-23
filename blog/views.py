@@ -52,7 +52,8 @@ def article_detail(request, article_id):
             Notification.objects.create(
                 user=article.author,
                 message=f"{request.user.username} a commenté votre article : {article.title}",
-                is_read=False
+                is_read=False,
+                is_displayed=False,
             )
             messages.success(request, 'Commentaire ajouté !')
             return redirect('article_detail', article_id=article.id)
@@ -99,7 +100,8 @@ def like_article(request, article_id):
         Notification.objects.create(
             user=article.author,
             message=f"{request.user.username} a aimé votre article : {article.title}",
-            is_read=False
+            is_read=False,
+            is_displayed=False
         )
     return redirect('home')
 
@@ -154,19 +156,87 @@ def favorite_article(request, article_id):
 #         'unread_notifications': unread_notifications,
 #     })
 
+# @login_required
+# def user_profile(request):
+#     tab = request.GET.get('tab', 'articles')
+#     if tab == 'likes':
+#         articles = request.user.liked_articles.all()
+#     else:
+#         articles = Article.objects.filter(author=request.user)
+#     favorites = Favorite.objects.filter(user=request.user).select_related('article')
+#     notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+    
+#     # Pas de mise à jour de is_read ici
+#     unread_notifications = Notification.objects.filter(user=request.user, is_read=False).count()
+
+#     return render(request, 'blog/profile.html', {
+#         'articles': articles,
+#         'favorites': favorites,
+#         'notifications': notifications,
+#         'tab': tab,
+#         'unread_notifications': unread_notifications,
+#     })
+
+# //////////////////////////
+
+# @login_required
+# def user_profile(request):
+#     tab = request.GET.get('tab', 'articles')
+#     if tab == 'likes':
+#         articles = request.user.liked_articles.all()
+#     elif tab == 'notifications':
+#         articles = []
+#         notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+#         notifications.filter(is_read=False).update(is_read=True)  # Marquer comme lues ici
+#     else:
+#         articles = Article.objects.filter(author=request.user)
+#         notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+#     favorites = Favorite.objects.filter(user=request.user).select_related('article')
+#     unread_notifications = Notification.objects.filter(user=request.user, is_read=False).count()
+
+#     return render(request, 'blog/profile.html', {
+#         'articles': articles,
+#         'favorites': favorites,
+#         'notifications': notifications,
+#         'tab': tab,
+#         'unread_notifications': unread_notifications,
+#     })
+    
+    
+# @login_required
+# def mark_notifications_read(request):
+#     if request.method == 'POST':
+#         Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+#         return JsonResponse({'status': 'success'})
+#     return JsonResponse({'status': 'error'}, status=400)
+
+# @login_required
+# def check_notifications(request):
+#     notifications = Notification.objects.filter(user=request.user, is_read=False).order_by('-created_at')[:5]
+#     new_notifications = [{'message': notif.message, 'id': notif.id} for notif in notifications]
+#     return JsonResponse({'new_notifications': new_notifications})
+
+
+
 @login_required
 def user_profile(request):
     tab = request.GET.get('tab', 'articles')
-    if tab == 'likes':
-        articles = request.user.liked_articles.all()
-    else:
-        articles = Article.objects.filter(author=request.user)
-    favorites = Favorite.objects.filter(user=request.user).select_related('article')
+    
+    # Définir notifications avant toute condition pour éviter UnboundLocalError
     notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
     
-    # Pas de mise à jour de is_read ici
-    unread_notifications = Notification.objects.filter(user=request.user, is_read=False).count()
+    # Définir articles en fonction de l'onglet
+    if tab == 'likes':
+        articles = request.user.liked_articles.all()
+    elif tab == 'notifications':
+        articles = []  # Pas d'articles dans cet onglet
+    else:
+        articles = Article.objects.filter(author=request.user)
+    
+    favorites = Favorite.objects.filter(user=request.user).select_related('article')
+    unread_notifications = notifications.filter(is_read=False).count()
 
+    # Pas de mise à jour de is_read ici, cela sera fait au départ via AJAX
     return render(request, 'blog/profile.html', {
         'articles': articles,
         'favorites': favorites,
@@ -174,8 +244,7 @@ def user_profile(request):
         'tab': tab,
         'unread_notifications': unread_notifications,
     })
-    
-    
+
 @login_required
 def mark_notifications_read(request):
     if request.method == 'POST':
@@ -185,9 +254,23 @@ def mark_notifications_read(request):
 
 @login_required
 def check_notifications(request):
-    notifications = Notification.objects.filter(user=request.user, is_read=False).order_by('-created_at')[:5]
+    # Récupérer les notifications non lues ET non affichées
+    notifications = Notification.objects.filter(
+        user=request.user,
+        is_read=False,
+        is_displayed=False
+    ).order_by('-created_at')[:5]
     new_notifications = [{'message': notif.message, 'id': notif.id} for notif in notifications]
+    
+    # Marquer ces notifications comme affichées
+    if new_notifications:
+        Notification.objects.filter(
+            user=request.user,
+            id__in=[notif['id'] for notif in new_notifications]
+        ).update(is_displayed=True)
+    
     return JsonResponse({'new_notifications': new_notifications})
+
 
 from django.contrib.auth import logout
 
