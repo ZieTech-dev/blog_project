@@ -1,127 +1,234 @@
 ﻿{% extends 'blog/base.html' %}
 {% block content %}
-    <h1 class="page-title">Articles</h1>
-    <form method="get" class="filter-form mb-5">
-        <div class="row g-3">
-            <div class="col-md-4">
-                <select name="category" class="form-select sleek-select">
-                    <option value="">Toutes les catégories</option>
-                    {% for category in categories %}
-                        <option value="{{ category.name }}">{{ category.name }}</option>
-                    {% endfor %}
-                </select>
+    
+    <div class="container-fluid modern-layout">
+        <!-- Sidebar gauche sticky -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2 class="sidebar-title">Filtres</h2>
             </div>
-            <div class="col-md-4">
-                <select name="tag" class="form-select sleek-select">
-                    <option value="">Tous les tags</option>
-                    {% for tag in tags %}
-                        <option value="{{ tag.name }}">{{ tag.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-4">
-                <button type="submit" class="btn btn-gradient w-100">Filtrer</button>
-            </div>
-        </div>
-    </form>
-
-    <div class="row g-4">
-        {% for article in articles %}
-            <div class="col-md-4">
-                <div class="card article-card">
-                    <div class="card-content">
-                        <h5 class="card-title">{{ article.title }}</h5>
-                        <p class="card-text">{{ article.content|truncatewords:20 }}</p>
-                        <div class="action-bar">
-                            <!-- Checkbox Lire -->
-                            <label class="action-icon read-icon">
-                                <input type="checkbox" class="read-check" data-article-id="{{ article.id }}">
-                                <span class="icon-wrapper">
-                                    <i class="fas fa-book-open unchecked"></i>
-                                    <i class="fas fa-book checked"></i>
-                                    <span class="ripple"></span>
-                                </span>
-                            </label>
-
-                            <!-- Checkbox Like -->
-                            {% if user.is_authenticated %}
-                                <label class="action-icon like-icon">
-                                    <input type="checkbox" class="like-check" data-article-id="{{ article.id }}"
-                                        {% if user in article.likes.all %}checked{% endif %}>
-                                    <span class="icon-wrapper">
-                                        <i class="far fa-heart unchecked"></i>
-                                        <i class="fas fa-heart checked"></i>
-                                        <span class="ripple"></span>
-                                        <span class="like-count">{{ article.likes.count }}</span>
-                                    </span>
-                                </label>
-                            {% else %}
-                                <a href="{% url 'login' %}?next={% url 'like_article' article.id %}" class="action-icon like-icon static">
-                                    <span class="icon-wrapper">
-                                        <i class="far fa-heart"></i>
-                                        <span class="like-count">{{ article.likes.count }}</span>
-                                    </span>
-                                </a>
-                            {% endif %}
-
-                            <!-- Checkbox Commenter -->
-                            <label class="action-icon comment-icon">
-                                <input type="checkbox" class="comment-check" data-article-id="{{ article.id }}">
-                                <span class="icon-wrapper">
-                                    <i class="far fa-comment unchecked"></i>
-                                    <i class="fas fa-comment checked"></i>
-                                    <span class="ripple"></span>
-                                    <span class="comment-count">{{ article.comments.count }}</span>
-                                </span>
-                            </label>
-                        </div>
-
-                        <!-- Volet des commentaires -->
-                        <div class="comment-panel" id="comment-panel-{{ article.id }}">
-                            <div class="comment-header">
-                                <h6>Commentaires</h6>
-                                <button class="btn btn-close comment-close" data-article-id="{{ article.id }}"></button>
-                            </div>
-                            <div class="comment-list">
-                                {% for comment in article.comments.all|slice:":5" %}
-                                    <div class="comment">
-                                        <div class="comment-avatar">
-                                            <i class="fas fa-user-circle"></i>
-                                        </div>
-                                        <div class="comment-content">
-                                            <strong>{{ comment.author.username }}</strong>
-                                            <p>{{ comment.content }}</p>
-                                            <small>{{ comment.created_at|timesince }} ago</small>
-                                        </div>
-                                    </div>
-                                {% empty %}
-                                    <p class="text-muted">Aucun commentaire pour l’instant.</p>
-                                {% endfor %}
-                                {% if article.comments.count > 5 %}
-                                    <a href="{% url 'article_detail' article.id %}#comments" class="see-more">Voir plus</a>
-                                {% endif %}
-                            </div>
-                            {% if user.is_authenticated %}
-                                <form method="post" action="{% url 'article_detail' article.id %}" class="comment-form" data-article-id="{{ article.id }}">
-                                    {% csrf_token %}
-                                    <div class="input-group">
-                                        <input type="text" name="content" class="form-control" placeholder="Ajouter un commentaire..." required>
-                                        <button type="submit" class="btn btn-primary">Envoyer</button>
-                                    </div>
-                                </form>
-                            {% else %}
-                                <p class="text-muted"><a href="{% url 'login' %}?next={% url 'article_detail' article.id %}">Connectez-vous pour commenter</a></p>
-                            {% endif %}
-                        </div>
-                    </div>
+            <div class="filter-section">
+                <div class="filter-group">
+                    <label for="category-filter" class="filter-label">Catégories</label>
+                    <select name="category" id="category-filter" class="filter-select">
+                        <option value="">Toutes les catégories</option>
+                        {% for category in categories %}
+                            <option value="{{ category.name }}" {% if category.name == category_filter %}selected{% endif %}>{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="tag-filter" class="filter-label">Tags</label>
+                    <select name="tag" id="tag-filter" class="filter-select">
+                        <option value="">Tous les tags</option>
+                        {% for tag in tags %}
+                            <option value="{{ tag.name }}" {% if tag.name == tag_filter %}selected{% endif %}>{{ tag.name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
             </div>
-        {% empty %}
-            <p class="no-content">Aucun article trouvé.</p>
-        {% endfor %}
+        </aside>
+
+        <!-- Contenu principal -->
+        <main class="main-content">
+            <h1 class="page-title">Articles</h1>
+
+            <!-- Champ de recherche avec suggestions -->
+            <div class="search-container mb-5">
+                <input type="text" id="article-search" class="search-input" placeholder="Rechercher un article...">
+                <div id="suggestions" class="suggestions-list"></div>
+            </div>
+
+            <!-- Liste des articles -->
+            <div class="row g-4" id="article-list">
+                {% for article in articles %}
+                    <div class="col-md-4">
+                        <div class="card article-card">
+                            <div class="card-content">
+                                <h5 class="card-title">{{ article.title }}</h5>
+                                <p class="card-text">{{ article.content|truncatewords:20 }}</p>
+                                <div class="action-bar">
+                                    <label class="action-icon read-icon">
+                                        <input type="checkbox" class="read-check" data-article-id="{{ article.id }}">
+                                        <span class="icon-wrapper">
+                                            <i class="fas fa-book-open unchecked"></i>
+                                            <i class="fas fa-book checked"></i>
+                                            <span class="ripple"></span>
+                                        </span>
+                                    </label>
+                                    {% if user.is_authenticated %}
+                                        <label class="action-icon like-icon">
+                                            <input type="checkbox" class="like-check" data-article-id="{{ article.id }}"
+                                                {% if user in article.likes.all %}checked{% endif %}>
+                                            <span class="icon-wrapper">
+                                                <i class="far fa-heart unchecked"></i>
+                                                <i class="fas fa-heart checked"></i>
+                                                <span class="ripple"></span>
+                                                <span class="like-count">{{ article.likes.count }}</span>
+                                            </span>
+                                        </label>
+                                    {% else %}
+                                        <a href="{% url 'login' %}?next={% url 'like_article' article.id %}" class="action-icon like-icon static">
+                                            <span class="icon-wrapper">
+                                                <i class="far fa-heart"></i>
+                                                <span class="like-count">{{ article.likes.count }}</span>
+                                            </span>
+                                        </a>
+                                    {% endif %}
+                                    <label class="action-icon comment-icon">
+                                        <input type="checkbox" class="comment-check" data-article-id="{{ article.id }}">
+                                        <span class="icon-wrapper">
+                                            <i class="far fa-comment unchecked"></i>
+                                            <i class="fas fa-comment checked"></i>
+                                            <span class="ripple"></span>
+                                            <span class="comment-count">{{ article.comments.count }}</span>
+                                        </span>
+                                    </label>
+                                </div>
+                                <div class="comment-panel" id="comment-panel-{{ article.id }}">
+                                    <div class="comment-header">
+                                        <h6>Commentaires</h6>
+                                        <button class="btn btn-close comment-close" data-article-id="{{ article.id }}"></button>
+                                    </div>
+                                    <div class="comment-list" id="comment-list-{{ article.id }}">
+                                        {% for comment in article.comments.all|slice:":5" %}
+                                            <div class="comment">
+                                                <div class="comment-avatar">
+                                                    <i class="fas fa-user-circle"></i>
+                                                </div>
+                                                <div class="comment-content">
+                                                    <strong>{{ comment.author.username }}</strong>
+                                                    <p>{{ comment.content }}</p>
+                                                    <small>{{ comment.created_at|timesince }} ago</small>
+                                                </div>
+                                            </div>
+                                        {% empty %}
+                                            <p class="text-muted">Aucun commentaire pour l’instant.</p>
+                                        {% endfor %}
+                                        {% if article.comments.count > 5 %}
+                                            <a href="{% url 'article_detail' article.id %}#comments" class="see-more">Voir plus</a>
+                                        {% endif %}
+                                    </div>
+                                    {% if user.is_authenticated %}
+                                        <form method="post" action="{% url 'add_comment' article.id %}" class="comment-form" data-article-id="{{ article.id }}">
+                                            {% csrf_token %}
+                                            <div class="input-group">
+                                                <input type="text" name="content" class="form-control" placeholder="Ajouter un commentaire..." required>
+                                                <button type="submit" class="btn btn-primary">Envoyer</button>
+                                            </div>
+                                        </form>
+                                    {% else %}
+                                        <p class="text-muted"><a href="{% url 'login' %}?next={% url 'article_detail' article.id %}">Connectez-vous pour commenter</a></p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="no-content">Aucun article trouvé.</p>
+                {% endfor %}
+            </div>
+        </main>
     </div>
 
     <style>
+        .container.mt-4{
+            margin: 0px !important;
+        }
+
+        /* Layout global */
+        .modern-layout {
+            display: flex;
+            min-height: 100vh;
+            background: #f4f7fa;
+            padding: 0;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: sticky;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: linear-gradient(135deg, #2a2e45 0%, #1e2235 100%);
+            color: #fff;
+            padding: 30px 20px;
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            transition: width 0.3s ease;
+        }
+        .sidebar-header {
+            margin-bottom: 40px;
+        }
+        .sidebar-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .filter-section {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .filter-label {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #d1d4e0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .filter-select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 12px 15px;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+        .filter-select:hover, .filter-select:focus {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: #ff6b6b;
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
+            outline: none;
+        }
+        .filter-select option {
+            background: #2a2e45;
+            color: #fff;
+        }
+
+        /* Contenu principal */
+        .main-content {
+            flex: 1;
+            padding: 40px;
+            background: #fff;
+            border-radius: 20px 0 0 20px;
+            box-shadow: inset 5px 0 15px rgba(0, 0, 0, 0.05);
+        }
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #2a2e45;
+            text-align: center;
+            margin-bottom: 40px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
         /* Général */
         .page-title {
             font-size: 2.5rem;
@@ -366,127 +473,384 @@
             color: #888;
             margin-top: 2rem;
         }
+
+        /* Nouveau style pour la recherche */
+        .search-container {
+            position: relative;
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+        .search-input {
+            width: 100%;
+            border-radius: 25px;
+            padding: 12px 20px;
+            font-size: 1rem;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+        .search-input:focus {
+            border-color: #ff4757;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            outline: none;
+        }
+        .suggestions-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        .suggestions-list.active {
+            display: block;
+        }
+        .suggestion-item {
+            padding: 10px 20px;
+            font-size: 0.95rem;
+            color: #333;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        .suggestion-item:hover {
+            background: #f5f5f5;
+        }
     </style>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Checkbox Lire (redirige vers article_detail)
-            document.querySelectorAll('.read-check').forEach(check => {
-                check.addEventListener('change', function() {
-                    if (this.checked) {
-                        window.location.href = `/article/${this.getAttribute('data-article-id')}/`;
+            const searchInput = document.getElementById('article-search');
+            const suggestionsList = document.getElementById('suggestions');
+            const articleList = document.getElementById('article-list');
+            const categoryFilter = document.getElementById('category-filter');
+            const tagFilter = document.getElementById('tag-filter');
+            let timeout;
+    
+            const userIsAuthenticated = {{ user.is_authenticated|lower }};
+    
+            // Fonction de filtrage des articles
+            function filterArticles(query, category, tag) {
+                console.log('Filtrage avec:', { query, category, tag });
+                fetch(`/?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&tag=${encodeURIComponent(tag)}`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
                     }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Erreur HTTP: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Réponse reçue:', data);
+                    articleList.innerHTML = '';
+                    if (data.articles && data.articles.length > 0) {
+                        data.articles.forEach(article => {
+                            articleList.innerHTML += `
+                                <div class="col-md-4">
+                                    <div class="card article-card">
+                                        <div class="card-content">
+                                            <h5 class="card-title">${article.title}</h5>
+                                            <p class="card-text">${article.content.substring(0, 100)}...</p>
+                                            <div class="action-bar">
+                                                <label class="action-icon read-icon">
+                                                    <input type="checkbox" class="read-check" data-article-id="${article.id}">
+                                                    <span class="icon-wrapper">
+                                                        <i class="fas fa-book-open unchecked"></i>
+                                                        <i class="fas fa-book checked"></i>
+                                                        <span class="ripple"></span>
+                                                    </span>
+                                                </label>
+                                                ${userIsAuthenticated ? `
+                                                    <label class="action-icon like-icon">
+                                                        <input type="checkbox" class="like-check" data-article-id="${article.id}" ${article.liked ? 'checked' : ''}>
+                                                        <span class="icon-wrapper">
+                                                            <i class="far fa-heart unchecked"></i>
+                                                            <i class="fas fa-heart checked"></i>
+                                                            <span class="ripple"></span>
+                                                            <span class="like-count">${article.likes_count}</span>
+                                                        </span>
+                                                    </label>
+                                                ` : `
+                                                    <a href="/login/?next=/like/${article.id}/" class="action-icon like-icon static">
+                                                        <span class="icon-wrapper">
+                                                            <i class="far fa-heart"></i>
+                                                            <span class="like-count">${article.likes_count}</span>
+                                                        </span>
+                                                    </a>
+                                                `}
+                                                <label class="action-icon comment-icon">
+                                                    <input type="checkbox" class="comment-check" data-article-id="${article.id}">
+                                                    <span class="icon-wrapper">
+                                                        <i class="far fa-comment unchecked"></i>
+                                                        <i class="fas fa-comment checked"></i>
+                                                        <span class="ripple"></span>
+                                                        <span class="comment-count">${article.comments_count}</span>
+                                                    </span>
+                                                </label>
+                                            </div>
+                                            <div class="comment-panel" id="comment-panel-${article.id}">
+                                                <div class="comment-header">
+                                                    <h6>Commentaires</h6>
+                                                    <button class="btn btn-close comment-close" data-article-id="${article.id}"></button>
+                                                </div>
+                                                <div class="comment-list" id="comment-list-${article.id}">
+                                                    <!-- Les commentaires seront chargés dynamiquement -->
+                                                </div>
+                                                ${userIsAuthenticated ? `
+                                                    <form method="post" action="/article/${article.id}/comment/" class="comment-form" data-article-id="${article.id}">
+                                                        {% csrf_token %}
+                                                        <div class="input-group">
+                                                            <input type="text" name="content" class="form-control" placeholder="Ajouter un commentaire..." required>
+                                                            <button type="submit" class="btn btn-primary">Envoyer</button>
+                                                        </div>
+                                                    </form>
+                                                ` : `
+                                                    <p class="text-muted"><a href="{% url 'login' %}?next=/article/${article.id}/">Connectez-vous pour commenter</a></p>
+                                                `}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        rebindEventListeners();
+                        loadInitialComments();
+                    } else {
+                        articleList.innerHTML = '<p class="no-content">Aucun article trouvé.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur lors du filtrage:', error);
+                    articleList.innerHTML = '<p class="no-content">Erreur lors du chargement des articles.</p>';
+                });
+            }
+    
+            // Recherche avec suggestions et debounce
+            searchInput.addEventListener('input', function() {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    const query = this.value.trim();
+                    const category = categoryFilter.value;
+                    const tag = tagFilter.value;
+                    if (query.length > 0) {
+                        fetch(`/search-suggestions/?q=${encodeURIComponent(query)}`, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        })
+                        .then(response => {
+                            if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
+                            return response.json();
+                        })
+                        .then(data => {
+                            suggestionsList.innerHTML = '';
+                            if (data.suggestions && data.suggestions.length > 0) {
+                                data.suggestions.forEach(suggestion => {
+                                    const div = document.createElement('div');
+                                    div.classList.add('suggestion-item');
+                                    div.textContent = suggestion.title;
+                                    div.addEventListener('click', function() {
+                                        searchInput.value = suggestion.title;
+                                        suggestionsList.classList.remove('active');
+                                        filterArticles(suggestion.title, category, tag);
+                                    });
+                                    suggestionsList.appendChild(div);
+                                });
+                                suggestionsList.classList.add('active');
+                            } else {
+                                suggestionsList.classList.remove('active');
+                            }
+                        })
+                        .catch(error => console.error('Erreur suggestions:', error));
+                    }
+                    filterArticles(query, category, tag);
+                }, 300);
+            });
+    
+            // Filtres automatiques pour catégorie et tag
+            [categoryFilter, tagFilter].forEach(select => {
+                select.addEventListener('change', function() {
+                    const query = searchInput.value.trim();
+                    const category = categoryFilter.value;
+                    const tag = tagFilter.value;
+                    filterArticles(query, category, tag);
                 });
             });
-
-            // Checkbox Like (AJAX)
-            document.querySelectorAll('.like-check').forEach(check => {
-                check.addEventListener('change', function() {
-                    const articleId = this.getAttribute('data-article-id');
-                    const isChecked = this.checked;
-                    const countSpan = this.nextElementSibling.querySelector('.like-count');
-            
-                    fetch(`/like/${articleId}/`, {  // Vérifie ce chemin
-                        method: 'POST',
+    
+            // Cacher les suggestions si clic en dehors
+            document.addEventListener('click', function(e) {
+                if (!searchInput.contains(e.target) && !suggestionsList.contains(e.target)) {
+                    suggestionsList.classList.remove('active');
+                }
+            });
+    
+            // Charger les commentaires initiaux pour chaque article
+            function loadInitialComments() {
+                document.querySelectorAll('.comment-panel').forEach(panel => {
+                    const articleId = panel.getAttribute('id').replace('comment-panel-', '');
+                    fetch(`/article/${articleId}/comments/`, {
                         headers: {
-                            'X-CSRFToken': document.querySelector('input[name="csrfmiddlewaretoken"]').value,
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ liked: isChecked })
-                    })
-                    .then(response => {
-                        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data.success) {
-                            countSpan.textContent = data.like_count;
-                        } else {
-                            this.checked = !isChecked; // Revenir en arrière
-                            alert('Erreur: ' + (data.error || 'Inconnu'));
-                        }
-                    })
-                    .catch(error => {
-                        this.checked = !isChecked;
-                        console.error('Erreur:', error);
-                    });
-                });
-            });
-
-            // Checkbox Commenter (ouvre le volet)
-            document.querySelectorAll('.comment-check').forEach(check => {
-                check.addEventListener('change', function() {
-                    const articleId = this.getAttribute('data-article-id');
-                    const panel = document.getElementById(`comment-panel-${articleId}`);
-                    const card = this.closest('.article-card');
-                    if (panel && card) {
-                        if (this.checked) {
-                            panel.classList.add('active');
-                            card.classList.add('expanded');
-                        } else {
-                            panel.classList.remove('active');
-                            card.classList.remove('expanded');
-                        }
-                    }
-                });
-            });
-
-            // Bouton de fermeture du volet
-            document.querySelectorAll('.comment-close').forEach(button => {
-                button.addEventListener('click', function() {
-                    const articleId = this.getAttribute('data-article-id');
-                    const panel = document.getElementById(`comment-panel-${articleId}`);
-                    const card = this.closest('.article-card');
-                    const check = document.querySelector(`.comment-check[data-article-id="${articleId}"]`);
-                    if (panel && card && check) {
-                        panel.classList.remove('active');
-                        card.classList.remove('expanded');
-                        check.checked = false;
-                    }
-                });
-            });
-
-            // Soumission des commentaires
-            document.querySelectorAll('.comment-form').forEach(form => {
-                form.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    const articleId = this.getAttribute('data-article-id');
-                    const formData = new FormData(this);
-
-                    fetch(this.action, {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-CSRFToken': document.querySelector('input[name="csrfmiddlewaretoken"]').value,
                             'X-Requested-With': 'XMLHttpRequest'
                         }
                     })
                     .then(response => response.json())
                     .then(data => {
-                        if (data.success) {
-                            const commentList = document.querySelector(`#comment-panel-${articleId} .comment-list`);
-                            const newComment = document.createElement('div');
-                            newComment.classList.add('comment');
-                            newComment.innerHTML = `
-                                <div class="comment-avatar"><i class="fas fa-user-circle"></i></div>
-                                <div class="comment-content">
-                                    <strong>${data.author}</strong>
-                                    <p>${data.content}</p>
-                                    <small>Juste maintenant</small>
-                                </div>
-                            `;
-                            commentList.insertBefore(newComment, commentList.firstChild);
-                            this.reset();
-                            const countSpan = document.querySelector(`.comment-check[data-article-id="${articleId}"] ~ .icon-wrapper .comment-count`);
-                            countSpan.textContent = parseInt(countSpan.textContent) + 1;
+                        const commentList = document.getElementById(`comment-list-${articleId}`);
+                        commentList.innerHTML = '';
+                        if (data.comments && data.comments.length > 0) {
+                            data.comments.slice(0, 5).forEach(comment => {
+                                commentList.innerHTML += `
+                                    <div class="comment">
+                                        <div class="comment-avatar">
+                                            <i class="fas fa-user-circle"></i>
+                                        </div>
+                                        <div class="comment-content">
+                                            <strong>${comment.author}</strong>
+                                            <p>${comment.content}</p>
+                                            <small>${comment.created_at}</small>
+                                        </div>
+                                    </div>
+                                `;
+                            });
+                            if (data.comments.length > 5) {
+                                commentList.innerHTML += `<a href="/article/${articleId}/#comments" class="see-more">Voir plus</a>`;
+                            }
                         } else {
-                            alert('Erreur: ' + (data.error || 'Inconnu'));
+                            commentList.innerHTML = '<p class="text-muted">Aucun commentaire pour l’instant.</p>';
                         }
                     })
-                    .catch(error => console.error('Erreur:', error));
+                    .catch(error => console.error('Erreur chargement commentaires:', error));
                 });
-            });
+            }
+    
+            // Réattacher les événements après mise à jour dynamique
+            function rebindEventListeners() {
+                document.querySelectorAll('.read-check').forEach(check => {
+                    check.addEventListener('change', function() {
+                        if (this.checked) {
+                            window.location.href = `/article/${this.getAttribute('data-article-id')}/`;
+                        }
+                    });
+                });
+    
+                document.querySelectorAll('.like-check').forEach(check => {
+                    check.addEventListener('change', function() {
+                        const articleId = this.getAttribute('data-article-id');
+                        const isChecked = this.checked;
+                        const countSpan = this.nextElementSibling.querySelector('.like-count');
+                        fetch(`/like/${articleId}/`, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': document.querySelector('input[name="csrfmiddlewaretoken"]').value,
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ liked: isChecked })
+                        })
+                        .then(response => {
+                            if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.success) {
+                                countSpan.textContent = data.like_count;
+                            } else {
+                                this.checked = !isChecked;
+                                alert('Erreur: ' + (data.error || 'Inconnu'));
+                            }
+                        })
+                        .catch(error => {
+                            this.checked = !isChecked;
+                            console.error('Erreur:', error);
+                        });
+                    });
+                });
+    
+                document.querySelectorAll('.comment-check').forEach(check => {
+                    check.addEventListener('change', function() {
+                        const articleId = this.getAttribute('data-article-id');
+                        const panel = document.getElementById(`comment-panel-${articleId}`);
+                        const card = this.closest('.article-card');
+                        if (panel && card) {
+                            if (this.checked) {
+                                panel.classList.add('active');
+                                card.classList.add('expanded');
+                            } else {
+                                panel.classList.remove('active');
+                                card.classList.remove('expanded');
+                            }
+                        }
+                    });
+                });
+    
+                document.querySelectorAll('.comment-close').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const articleId = this.getAttribute('data-article-id');
+                        const panel = document.getElementById(`comment-panel-${articleId}`);
+                        const card = this.closest('.article-card');
+                        const check = document.querySelector(`.comment-check[data-article-id="${articleId}"]`);
+                        if (panel && card && check) {
+                            panel.classList.remove('active');
+                            card.classList.remove('expanded');
+                            check.checked = false;
+                        }
+                    });
+                });
+    
+                document.querySelectorAll('.comment-form').forEach(form => {
+                    form.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        const articleId = this.getAttribute('data-article-id');
+                        const formData = new FormData(this);
+                        fetch(`/article/${articleId}/comment/`, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-CSRFToken': document.querySelector('input[name="csrfmiddlewaretoken"]').value,
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        })
+                        .then(response => {
+                            if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.success) {
+                                const commentList = document.getElementById(`comment-list-${articleId}`);
+                                const newComment = document.createElement('div');
+                                newComment.classList.add('comment');
+                                newComment.innerHTML = `
+                                    <div class="comment-avatar"><i class="fas fa-user-circle"></i></div>
+                                    <div class="comment-content">
+                                        <strong>${data.author}</strong>
+                                        <p>${data.content}</p>
+                                        <small>${data.created_at}</small>
+                                    </div>
+                                `;
+                                commentList.insertBefore(newComment, commentList.firstChild);
+                                this.reset();
+                                const countSpan = document.querySelector(`.comment-check[data-article-id="${articleId}"] ~ .icon-wrapper .comment-count`);
+                                countSpan.textContent = parseInt(countSpan.textContent) + 1;
+                            } else {
+                                alert('Erreur: ' + (data.error || 'Inconnu'));
+                            }
+                        })
+                        .catch(error => console.error('Erreur ajout commentaire:', error));
+                    });
+                });
+            }
+    
+            // Initialiser les événements au chargement
+            rebindEventListeners();
+            loadInitialComments();
         });
     </script>
 {% endblock %}

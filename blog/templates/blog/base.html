@@ -2,33 +2,170 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blog</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    {% block style %}
+    {% endblock style %}
     <style>
+        /* Reset et style global */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif; /* Typographie moderne */
+        }
+        body {
+            background: #fff;
+            color: #2a2e45;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Navbar */
+        .navbar {
+            background: linear-gradient(135deg, #2a2e45 0%, #1e2235 100%);
+            padding: 15px 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .navbar-brand {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: color 0.3s ease;
+        }
+        .navbar-brand:hover {
+            color: #ff6b6b;
+        }
+        .navbar-nav .nav-link {
+            color: #d1d4e0;
+            font-size: 1.1rem;
+            font-weight: 500;
+            padding: 10px 15px;
+            transition: all 0.3s ease;
+        }
+        .navbar-nav .nav-link:hover {
+            color: #ff6b6b;
+            transform: translateY(-2px);
+        }
+        .navbar-nav .btn-link {
+            color: #d1d4e0;
+            text-decoration: none;
+        }
+        .navbar-nav .btn-link:hover {
+            color: #ff6b6b;
+        }
+        .badge {
+            background: #ff6b6b;
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            vertical-align: middle;
+            transition: transform 0.3s ease;
+        }
+        .nav-link:hover .badge {
+            transform: scale(1.1);
+        }
+
+        /* Conteneur principal */
+        .container.mt-4 {
+            padding: 0;
+            max-width: 100%;
+        }
+
+        /* Messages */
+        .alert {
+            border-radius: 15px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            background: #fff;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border: none;
+            font-size: 1rem;
+            color: #2a2e45;
+        }
+        .alert-success {
+            background: linear-gradient(45deg, #4ecdc4, #a8edea);
+            color: #fff;
+        }
+        .alert-danger {
+            background: linear-gradient(45deg, #ff6b6b, #f7b7b7);
+            color: #fff;
+        }
+        .alert-info {
+            background: linear-gradient(45deg, #1e90ff, #a3cfff);
+            color: #fff;
+        }
+
+        /* Notification Popup */
         .notification-popup {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background-color: #333;
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(45deg, #2a2e45, #1e2235);
+            color: #d1d4e0;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
             display: none;
             z-index: 1000;
-            max-width: 300px;
+            max-width: 320px;
+            font-size: 1rem;
+            font-weight: 500;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s ease;
         }
         .notification-popup.show {
             display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .notification-popup::before {
+            content: "\f0f3"; /* Icône cloche FontAwesome */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            margin-right: 10px;
+            color: #ff6b6b;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .navbar-nav {
+                text-align: center;
+                padding: 20px 0;
+            }
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            .main-content {
+                border-radius: 0;
+            }
+            .notification-popup {
+                bottom: 20px;
+                right: 20px;
+                max-width: 80%;
+            }
         }
     </style>
+    <!-- Google Fonts pour une typographie moderne -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <nav class="navbar navbar-expand-lg">
         <div class="container">
             <a class="navbar-brand" href="{% url 'home' %}">Blog</a>
-            <div class="collapse navbar-collapse">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon" style="filter: invert(1);"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     {% if user.is_authenticated %}
                         <li class="nav-item"><a class="nav-link" href="{% url 'create_article' %}">Créer un article</a></li>
@@ -44,7 +181,7 @@
                         <li class="nav-item">
                             <form method="post" action="{% url 'logout' %}" style="display:inline;">
                                 {% csrf_token %}
-                                <button type="submit" class="nav-link btn btn-link" style="padding:0; border:none; background:none;">Déconnexion</button>
+                                <button type="submit" class="nav-link btn btn-link">Déconnexion</button>
                             </form>
                         </li>
                     {% else %}
@@ -54,6 +191,7 @@
             </div>
         </div>
     </nav>
+
     <div class="container mt-4">
         {% if messages %}
             {% for message in messages %}
@@ -62,6 +200,7 @@
         {% endif %}
         {% block content %}{% endblock %}
     </div>
+
     {% if user.is_authenticated %}
         <div id="notification-popup" class="notification-popup"></div>
         <script>

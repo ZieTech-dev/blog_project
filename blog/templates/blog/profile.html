@@ -1,62 +1,104 @@
 ﻿{% extends 'blog/base.html' %}
 
+{% block style %}
+<style>
+    
+    .hover-shadow:hover {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+
+    .transition-all {
+        transition: all 0.2s ease-in-out;
+    }
+
+    .nav-tabs .nav-link {
+        color: #495057;
+    }
+
+    .nav-tabs .nav-link:hover {
+        background-color: #f8f9fa;
+    }
+</style>
+{% endblock style %}
 
 {% block content %}
-    <h1>Profil</h1>
-    <ul class="nav nav-tabs mb-4">
-        <li class="nav-item">
-            <a class="nav-link {% if tab == 'articles' %}active{% endif %}" href="?tab=articles">Mes articles</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link {% if tab == 'likes' %}active{% endif %}" href="?tab=likes">Articles likés</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link {% if tab == 'notifications' %}active{% endif %}" href="?tab=notifications">Notifications</a>
-        </li>
-    </ul>
+    <div class="container py-5">
+        <h1 class="mb-4 fw-bold">Profil</h1>
+        
+        <!-- Navigation Tabs -->
+        <ul class="nav nav-tabs mb-5 border-bottom-0">
+            <li class="nav-item">
+                <a class="nav-link {% if tab == 'articles' %}active bg-white shadow-sm{% endif %} rounded-top" 
+                   href="?tab=articles">Mes articles</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if tab == 'likes' %}active bg-white shadow-sm{% endif %} rounded-top" 
+                   href="?tab=likes">Articles likés</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if tab == 'notifications' %}active bg-white shadow-sm{% endif %} rounded-top" 
+                   href="?tab=notifications">Notifications</a>
+            </li>
+        </ul>
 
-    {% if tab != 'notifications' %}
-        <div class="row">
-            {% for article in articles %}
-                <div class="col-md-4 mb-4">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ article.title }}</h5>
-                            <a href="{% url 'article_detail' article.id %}" class="btn btn-primary">Voir</a>
+        <!-- Articles and Favorites Section -->
+        {% if tab != 'notifications' %}
+            <!-- Articles -->
+            <div class="row g-4 mb-5">
+                {% for article in articles %}
+                    <div class="col-md-4">
+                        <div class="card h-100 shadow-sm hover-shadow transition-all">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title mb-3">{{ article.title|truncatechars:50 }}</h5>
+                                <a href="{% url 'article_detail' article.id %}" 
+                                   class="btn btn-primary mt-auto w-50 align-self-center">Voir</a>
+                            </div>
                         </div>
                     </div>
-                </div>
-            {% empty %}
-                <p>Aucun article.</p>
-            {% endfor %}
-        </div>
-
-        <h3>Favoris</h3>
-        <div class="row">
-            {% for favorite in favorites %}
-                <div class="col-md-4 mb-4">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ favorite.article.title }}</h5>
-                            <a href="{% url 'article_detail' favorite.article.id %}" class="btn btn-primary">Voir</a>
-                        </div>
+                {% empty %}
+                    <div class="col-12">
+                        <p class="text-muted text-center py-4">Aucun article disponible.</p>
                     </div>
-                </div>
-            {% empty %}
-                <p>Aucun favori.</p>
-            {% endfor %}
-        </div>
-    {% endif %}
-
-    {% if tab == 'notifications' %}
-        <h3>Notifications</h3>
-        {% for notification in notifications %}
-            <div class="alert alert-{% if notification.is_read %}secondary{% else %}info{% endif %}">
-                {{ notification.message }} - {{ notification.created_at }}
+                {% endfor %}
             </div>
-        {% empty %}
-            <p>Aucune notification.</p>
-        {% endfor %}
-    {% endif %}
-{% endblock %}
 
+            <!-- Favorites -->
+            <h3 class="mb-4 fw-bold">Favoris</h3>
+            <div class="row g-4">
+                {% for favorite in favorites %}
+                    <div class="col-md-4">
+                        <div class="card h-100 shadow-sm hover-shadow transition-all">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title mb-3">{{ favorite.article.title|truncatechars:50 }}</h5>
+                                <a href="{% url 'article_detail' favorite.article.id %}" 
+                                   class="btn btn-primary mt-auto w-50 align-self-center">Voir</a>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="col-12">
+                        <p class="text-muted text-center py-4">Aucun article en favori.</p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Notifications Section -->
+        {% if tab == 'notifications' %}
+            <h3 class="mb-4 fw-bold">Notifications</h3>
+            <div class="notifications-list">
+                {% for notification in notifications %}
+                    <div class="alert {% if notification.is_read %}alert-secondary{% else %}alert-info{% endif %} shadow-sm mb-3 transition-all"
+                         role="alert">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>{{ notification.message }}</span>
+                            <small class="text-muted">{{ notification.created_at|date:"d/m/Y H:i" }}</small>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="text-muted text-center py-4">Aucune notification à afficher.</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

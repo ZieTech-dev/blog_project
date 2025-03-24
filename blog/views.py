@@ -12,25 +12,54 @@ from .forms import ArticleForm, CommentForm
 import json
 
 def home(request):
-    articles = Article.objects.all().prefetch_related('comments')  # Optimisation pour les commentaires
+    articles = Article.objects.all()
     categories = Category.objects.all()
     tags = Tag.objects.all()
-    category_filter = request.GET.get('category')
-    tag_filter = request.GET.get('tag')
+
+    query = request.GET.get('q', '')
+    category_filter = request.GET.get('category', '')
+    tag_filter = request.GET.get('tag', '')
+
+    if query:
+        articles = articles.filter(title__icontains=query)
     if category_filter:
         articles = articles.filter(category__name=category_filter)
     if tag_filter:
         articles = articles.filter(tags__name=tag_filter)
+
     unread_notifications = 0
     if request.user.is_authenticated:
         unread_notifications = Notification.objects.filter(user=request.user, is_read=False).count()
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        articles_data = [{
+            'id': article.id,
+            'title': article.title,
+            'content': article.content,
+            'likes_count': article.likes.count(),
+            'comments_count': article.comments.count(),
+            'liked': request.user.is_authenticated and request.user in article.likes.all()
+        } for article in articles]
+        return JsonResponse({'articles': articles_data})
+
     return render(request, 'blog/home.html', {
         'articles': articles,
         'categories': categories,
         'tags': tags,
+        'category_filter': category_filter,
+        'tag_filter': tag_filter,
         'unread_notifications': unread_notifications,
     })
     
+    
+def search_suggestions(request):
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        query = request.GET.get('q', '')
+        suggestions = Article.objects.filter(title__icontains=query)[:5]
+        suggestions_data = [{'title': article.title} for article in suggestions]
+        return JsonResponse({'suggestions': suggestions_data})
+    return JsonResponse({'suggestions': []})
+
 
 def article_detail(request, article_id):
     article = get_object_or_404(Article, id=article_id)
@@ -143,6 +172,41 @@ def favorite_article(request, article_id):
     if not created:
         favorite.delete()
     return redirect('article_detail', article_id=article.id)
+
+
+def article_comments(request, article_id):
+    article = get_object_or_404(Article, id=article_id)
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        comments = article.comments.all()
+        comments_data = [{
+            'author': comment.author.username,
+            'content': comment.content,
+            'created_at': comment.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        } for comment in comments]
+        return JsonResponse({'comments': comments_data}, status=200)
+    return JsonResponse({'error': 'Requête invalide'}, status=400)
+
+
+@login_required
+def add_comment(request, article_id):
+    article = get_object_or_404(Article, id=article_id)
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        content = request.POST.get('content', '').strip()
+        if content:
+            comment = Comment.objects.create(
+                article=article,
+                author=request.user,
+                content=content
+            )
+            return JsonResponse({
+                'success': True,
+                'author': request.user.username,
+                'content': content,
+                'created_at': comment.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            }, status=200)
+        return JsonResponse({'success': False, 'error': 'Le commentaire ne peut pas être vide'}, status=400)
+    return JsonResponse({'success': False, 'error': 'Requête invalide'}, status=400)
+
 
 
 
